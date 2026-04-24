@@ -35,7 +35,7 @@
  */
 
 #ifndef TYPES_H
-#define TYPES_H
+#define TYPES_H 
 
 #include <stdbool.h>  /* For bool type */
 
