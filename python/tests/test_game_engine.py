@@ -530,14 +530,13 @@ class TestBlackjackGameExecuteAction:
     def test_hit_updates_running_count(self):
         game = BlackjackGame()
         hand = Hand([Card(8, "♥"), Card(5, "♣")])
-        # Ensure next card dealt is known
-        game.shoe.cards = [Card(3, "♦")] + game.shoe.cards
+        # Prepend a known card (2♦ = +1 hi-lo) so it's dealt next via pop()
+        game.shoe.cards = game.shoe.cards + [Card(2, "♦")]
         game.shoe.cut_pos = 1000
         initial_count = game.running_count
         game.execute_action(hand, Action.HIT, Card(7, "♦"))
-        # Count should have changed (card dealt was 3♦ = +1)
-        # But we just check it ran without error and count changed
-        assert game.running_count != initial_count or True  # card dealt determines
+        # Card(2) has hi_lo_val = +1, so count should increase by 1
+        assert game.running_count == initial_count + 1
 
     def test_stand_sets_standing_status(self):
         game = BlackjackGame()
@@ -741,11 +740,13 @@ class TestBlackjackGamePlayRound:
         assert isinstance(result, float)
 
     def test_play_round_result_is_multiple_of_bet(self):
-        # Without strategy, result should be ±bet or 0 or 1.5×bet
+        # Without strategy, result should be ±bet, 0 (push), or 1.5×bet (blackjack).
+        # Negative doubled bets (-20) and positive doubled/split wins (20) are also valid.
         game = BlackjackGame()
         for _ in range(10):
             result = game.play_round(bet=10.0)
-            # Possible: -10, 0, 10, or 15 (blackjack)
+            # -20 = double-down loss, -10 = normal loss, 0 = push,
+            # 10 = normal win, 15 = blackjack payout, 20 = doubled/split win
             assert result in [-10.0, 0.0, 10.0, 15.0, -20.0, 20.0]
 
     def test_play_round_reshuffles_when_needed(self):

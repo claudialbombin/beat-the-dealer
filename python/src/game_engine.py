@@ -729,7 +729,9 @@ class BlackjackGame:
         continuous shuffle machines defeat this by never letting
         the count deviate far from zero.
         """
-        self.running_count += card.hi_lo_val if card is not None else 0
+        if card is None:
+            return
+        self.running_count += card.hi_lo_val
     
     @property
     def true_count(self) -> float:
