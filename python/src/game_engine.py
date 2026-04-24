@@ -38,7 +38,7 @@ WHY THIS MATTERS FOR JANE STREET:
     - Ability to model real-world processes exactly
     - Careful state management (the game has many interacting states)
 
-Author: Blackjack Solver Project
+Author: Claudia Maria Lopez Bombin
 License: MIT
 Reference: Thorp, E.O. "Beat the Dealer" (1966)
 """
