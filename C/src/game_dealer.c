@@ -19,6 +19,8 @@
  */
 
 #include "../include/game_core.h"
+#include "../include/hand_utils.h"  /* NEEDED: for hand_init(), hand_add_card(), hand_best_value(), hand_is_soft() */
+#include "../include/shoe_utils.h"  /* NEEDED: for shoe_deal_card() */
 
 /**
  * game_deal_initial: Deal initial two-card hands.

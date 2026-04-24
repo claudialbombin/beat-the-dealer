@@ -20,6 +20,9 @@
  */
 
 #include "../include/monte_carlo.h"
+#include "../include/game_core.h"     /* NEEDED: for game_execute_action() */
+#include "../include/hand_utils.h"    /* NEEDED: for hand_init() */
+#include "../include/shoe_utils.h"    /* NEEDED: for shoe_init() */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -44,6 +47,7 @@ void mc_solver_init(const SimConfig* config) {
  */
 double mc_simulate_action(StrategyKey key, PlayerAction action,
                          const SimConfig* config) {
+    (void)key;  /* key would be used to set up the initial hand state */
     double total_return = 0.0;
     int valid_sims = 0;
     
@@ -112,8 +116,8 @@ int mc_generate_states(StrategyKey* states, int max_states) {
  *
  * Shows dealer upcard values (2-A) as column headers with separator.
  */
-static void mc_print_header(void) {
-    printf("\n%-8s", "Jugador");
+void mc_print_header(void) {
+    printf("\n%-8s", "Player");
     for (int dv = 2; dv <= 11; dv++)
         printf("%6s", dv <= 10 ? (char[]){dv+'0','\0'} : "A");
     printf("\n");

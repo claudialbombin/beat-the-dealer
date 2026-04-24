@@ -90,7 +90,18 @@ double count_calculate_true(int running_count, const Shoe* shoe);
 void count_simulate_shoe(const SimConfig* config,
                         const StrategyEntry* strategy_table,
                         int strategy_entries,
-                        CountResults* results);
+                        CountingResults* results);
+
+/**
+ * count_run_full_simulation: Execute complete counting simulation.
+ *
+ * Runs multiple shoes and aggregates results for statistical analysis.
+ */
+void count_run_full_simulation(const SimConfig* config,
+                              const StrategyEntry* strategy_table,
+                              int strategy_entries,
+                              int num_shoes,
+                              CountingResults* results);
 
 /**
  * count_print_results: Displays counting simulation results.
@@ -99,8 +110,16 @@ void count_simulate_shoe(const SimConfig* config,
  * and the calculated advantage. If advantage is positive,
  * confirms that counting provides a real edge.
  *
- * @param results Pointer to CountResults to display
+ * @param results Pointer to CountingResults to display
  */
-void count_print_results(const CountResults* results);
+void count_print_results(const CountingResults* results);
+
+/**
+ * count_get_advantage_level: Human-readable description of true count.
+ *
+ * @param true_count Current true count
+ * @return String like "Favorable", "Neutral", etc.
+ */
+const char* count_get_advantage_level(double true_count);
 
 #endif /* COUNTING_SYSTEM_H */

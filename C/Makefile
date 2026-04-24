@@ -52,6 +52,7 @@ SOURCES = $(SRC_DIR)/card_utils.c \
           $(SRC_DIR)/visual_strategy.c \
           $(SRC_DIR)/visual_ev.c \
           $(SRC_DIR)/visual_distribution.c \
+          $(SRC_DIR)/interactive_mode.c \
           $(SRC_DIR)/main.c
 
 # Generate object file paths from source file paths
@@ -112,6 +113,13 @@ counting: $(TARGET)
 	@echo "Simulating card counting..."
 	@echo ""
 	./$(TARGET) --counting
+
+# Run interactive game with advisor
+play: $(TARGET)
+	@echo ""
+	@echo "Iniciando modo interactivo..."
+	@echo ""
+	./$(TARGET) --play
 
 # Generate visualizations only
 viz: $(TARGET)

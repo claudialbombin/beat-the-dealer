@@ -10,6 +10,7 @@
  */
 
 #include "../include/counting_system.h"
+#include "../include/shoe_utils.h"  /* NEEDED: for shoe_cards_remaining() */
 #include <stdio.h>
 
 /**

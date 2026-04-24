@@ -11,6 +11,8 @@
 
 #include "../include/counting_system.h"
 #include "../include/betting_strategy.h"
+#include "../include/game_core.h"      /* NEEDED: for game_play_full_round() */
+#include "../include/shoe_utils.h"     /* NEEDED: for shoe_init(), shoe_needs_reshuffle() */
 #include <stdio.h>
 
 /**
@@ -19,7 +21,7 @@
  * Sets all fields to zero and basic strategy return to -0.5%
  * (theoretical house edge with perfect basic strategy).
  */
-static void count_init_results(CountResults* results) {
+static void count_init_results(CountingResults* results) {
     results->total_wagered = 0.0;
     results->total_won = 0.0;
     results->total_hands = 0;
@@ -67,17 +69,13 @@ static int count_simulate_single_shoe(const SimConfig* config,
 void count_simulate_shoe(const SimConfig* config,
                         const StrategyEntry* strategy_table,
                         int strategy_entries,
-                        CountResults* results) {
+                        CountingResults* results) {
     double shoe_return;
     int hands = count_simulate_single_shoe(config, strategy_table,
                                           strategy_entries, &shoe_return);
     
     results->total_hands += hands;
     results->total_shoes++;
-    results->counting_return_pct = shoe_return;
-    results->advantage_pct = results->counting_return_pct -
-                            results->basic_strategy_return_pct;
-    
     printf("Shoe completed: %d hands, Return: %.3f%%\n", hands, shoe_return);
 }
 
@@ -86,7 +84,7 @@ void count_simulate_shoe(const SimConfig* config,
  *
  * Shows key metrics and confirms whether counting provides advantage.
  */
-void count_print_results(const CountResults* results) {
+void count_print_results(const CountingResults* results) {
     printf("\n=== CARD COUNTING RESULTS ===\n");
     printf("Shoes: %d, Hands: %d\n", results->total_shoes, results->total_hands);
     printf("Total bet: $%.2f, Won: $%.2f\n",
@@ -110,7 +108,7 @@ void count_run_full_simulation(const SimConfig* config,
                               const StrategyEntry* strategy_table,
                               int strategy_entries,
                               int num_shoes,
-                              CountResults* results) {
+                              CountingResults* results) {
     count_init_results(results);
     printf("\nRunning counting simulation: %d shoes\n", num_shoes);
     
@@ -121,16 +119,16 @@ void count_run_full_simulation(const SimConfig* config,
         double shoe_return;
         int hands = count_simulate_single_shoe(config, strategy_table,
                                               strategy_entries, &shoe_return);
-        total_return += shoe_return;
+        total_return += shoe_return * hands;
         total_hands += hands;
         
-        if (shoe % (num_shoes / 5) == 0)
+        if (num_shoes >= 5 && shoe % (num_shoes / 5) == 0)
             printf("Progress: %d/%d\n", shoe + 1, num_shoes);
     }
     
     results->total_hands = total_hands;
     results->total_shoes = num_shoes;
-    results->counting_return_pct = total_return / num_shoes;
+    results->counting_return_pct = total_hands > 0 ? total_return / total_hands : 0.0;
     results->advantage_pct = results->counting_return_pct -
                             results->basic_strategy_return_pct;
     printf("\nSimulation completed.\n");

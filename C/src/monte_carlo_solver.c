@@ -10,6 +10,8 @@
  */
 
 #include "../include/monte_carlo.h"
+#include "../include/game_core.h"      /* NEEDED: for game_play_full_round() */
+#include "../include/shoe_utils.h"     /* NEEDED: for shoe_init(), shoe_needs_reshuffle(), shoe_shuffle() */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

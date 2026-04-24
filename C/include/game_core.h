@@ -59,6 +59,11 @@ void game_init(SimConfig config);
 void game_deal_initial(Hand* player, Hand* dealer, Shoe* shoe);
 
 /**
+ * game_play_dealer: Execute dealer's fixed strategy until stand or bust.
+ */
+void game_play_dealer(Hand* dealer, Shoe* shoe, bool hits_soft_17);
+
+/**
  * game_execute_action: Executes a chosen player action.
  *
  * ACTION EFFECTS:
@@ -103,5 +108,23 @@ double game_calculate_payout(const Hand* player, const Hand* dealer);
  * @return Array of available actions (caller must NOT free)
  */
 PlayerAction* game_get_available_actions(const Hand* hand, int* count);
+
+/**
+ * game_play_full_round: Execute complete round with optimal strategy.
+ * Returns net profit/loss for the round.
+ */
+double game_play_full_round(Shoe* shoe, double bet,
+                           const StrategyEntry* strategy_table,
+                           int table_size, int* running_count);
+
+/**
+ * hand_is_blackjack_val: Check if hand is a natural blackjack (2 cards = 21).
+ */
+bool hand_is_blackjack_val(const Hand* hand);
+
+/**
+ * hand_is_bust_val: Check if hand exceeded 21.
+ */
+bool hand_is_bust_val(const Hand* hand);
 
 #endif /* GAME_CORE_H */

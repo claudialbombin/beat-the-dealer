@@ -1,0 +1,82 @@
+# ============================================================================
+# Blackjack Monte Carlo Solver - Python Dependencies
+# ============================================================================
+# 
+# Install all dependencies:
+#   pip install -r requirements.txt
+#
+# Or install individually:
+#   pip install numpy matplotlib seaborn tqdm
+#
+# Minimum Python version: 3.8+
+#
+# Author: Claudia Maria Lopez Bombin
+# License: MIT
+# Repository: github.com/claudia-lopez/blackjack-monte-carlo
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Core Numerical Computing
+# ---------------------------------------------------------------------------
+
+# NumPy: Fundamental package for scientific computing in Python.
+# Used for: Array operations, statistical calculations (mean, std),
+#           random number generation, and efficient numerical computations
+#           throughout the Monte Carlo simulation engine.
+numpy>=1.21.0
+
+# ---------------------------------------------------------------------------
+# Data Visualization
+# ---------------------------------------------------------------------------
+
+# Matplotlib: Comprehensive plotting library for Python.
+# Used for: Generating all project visualizations including
+#           strategy heatmaps, EV vs True Count plots (THE KEY GRAPH),
+#           bankroll evolution charts, true count distributions,
+#           and the summary dashboard.
+# Version 3.5.0+ required for seaborn-v0_8-darkgrid style support.
+matplotlib>=3.5.0
+
+# Seaborn: Statistical data visualization built on matplotlib.
+# Used for: Enhanced visual styling, color palettes,
+#           and default plot aesthetics that make the
+#           visualizations look professional and polished.
+seaborn>=0.11.0
+
+# ---------------------------------------------------------------------------
+# Progress Tracking
+# ---------------------------------------------------------------------------
+
+# tqdm: Fast, extensible progress bar for loops.
+# Used for: Displaying progress during long-running operations:
+#           - Monte Carlo strategy computation (~340 states)
+#           - Card counting simulation (hundreds of shoes)
+#           - Basic strategy EV calculation (thousands of hands)
+# Provides elapsed time, estimated time remaining, and iterations/sec.
+tqdm>=4.62.0
+
+# ---------------------------------------------------------------------------
+# Optional / Development Dependencies
+# ---------------------------------------------------------------------------
+
+# SciPy: Scientific computing library (optional, for advanced analysis).
+# Used for: Statistical distributions (norm.pdf for distribution fitting),
+#           optimization functions for betting ramp optimization,
+#           and advanced statistical tests.
+# Uncomment if you want to use advanced analysis features:
+# scipy>=1.7.0
+
+# ---------------------------------------------------------------------------
+# Notes
+# ---------------------------------------------------------------------------
+#
+# All dependencies are pure Python or have pre-compiled wheels available
+# for Windows, macOS, and Linux. No C compiler or system libraries required.
+#
+# For the C version of this project, see the /C directory which uses
+# only the standard C library with no external dependencies.
+#
+# Tested with Python 3.8, 3.9, 3.10, 3.11, and 3.12.
+#
+# Installation time: ~30 seconds on a typical broadband connection.
+# Disk space required: ~200 MB for all packages and dependencies.

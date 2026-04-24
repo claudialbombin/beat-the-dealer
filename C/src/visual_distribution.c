@@ -116,7 +116,7 @@ void viz_bankroll_evolution(const double* bankroll_history, int num_points,
  * Combines key metrics into a single overview display.
  * Perfect for project presentations and quick reference.
  */
-void viz_summary_dashboard(const CountResults* results,
+void viz_summary_dashboard(const CountingResults* results,
                           const TrueCountData* tc_data, int tc_count,
                           const char* filename) {
     FILE* file = fopen(filename, "w");

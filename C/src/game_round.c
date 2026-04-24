@@ -13,6 +13,11 @@
 
 #include "../include/game_core.h"
 #include "../include/counting_system.h"
+#include "../include/hand_utils.h"  /* NEEDED: for hand_best_value(), hand_is_soft() */
+#include "../include/shoe_utils.h"  /* NEEDED: for shoe_deal_card() */
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 /**
  * select_action: Look up optimal action from strategy table.
@@ -35,30 +40,6 @@ static PlayerAction select_action(StrategyKey key,
 }
 
 /**
- * play_player_hand: Play a hand using optimal strategy.
- *
- * For each decision point: look up state in strategy table,
- * execute recommended action, update running count.
- */
-static void play_player_hand(Hand* hand, const Card* dealer_up,
-                            Shoe* shoe, int* running_count,
-                            const StrategyEntry* table, int table_size) {
-    StrategyKey key;
-    while (hand->status == HAND_ACTIVE) {
-        key.player_value = hand_best_value(hand);
-        key.dealer_upcard = dealer_up->value;
-        key.is_soft = hand_is_soft(hand);
-        key.is_pair = false;
-        
-        PlayerAction action = select_action(key, table, table_size);
-        game_execute_action(hand, action, shoe);
-        
-        Card* last = &hand->cards[hand->num_cards - 1];
-        count_update(running_count, last);
-    }
-}
-
-/**
  * create_state_key: Build strategy lookup key from current state.
  *
  * Extracts player value, dealer upcard, and soft flag.
@@ -71,6 +52,25 @@ static StrategyKey create_state_key(const Hand* player,
     key.is_soft = hand_is_soft(player);
     key.is_pair = false;
     return key;
+}
+
+/**
+ * play_player_hand: Play a hand using optimal strategy.
+ *
+ * For each decision point: look up state in strategy table,
+ * execute recommended action, update running count.
+ */
+static void play_player_hand(Hand* hand, const Card* dealer_up,
+                            Shoe* shoe, int* running_count,
+                            const StrategyEntry* table, int table_size) {
+    while (hand->status == HAND_ACTIVE) {
+        StrategyKey key = create_state_key(hand, dealer_up);
+        PlayerAction action = select_action(key, table, table_size);
+        game_execute_action(hand, action, shoe);
+
+        Card* last = &hand->cards[hand->num_cards - 1];
+        count_update(running_count, last);
+    }
 }
 
 /**

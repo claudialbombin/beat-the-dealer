@@ -1,0 +1,21 @@
+
+=== TRUE COUNT DISTRIBUTION ===
+===============================
+
+Shows how often each TC occurs.
+Most hands at TC -1 to +1.
+
+TC  -3 [  1000] |##########
+TC  +0 [  5000] |##################################################
+TC  +2 [  2000] |####################
+TC  +4 [   800] |########
+TC  +6 [   200] |##
+
+Total observations: 9000
+
+Percentage by TC:
+TC  -3: 11.1%
+TC  +0: 55.6%
+TC  +2: 22.2%
+TC  +4: 8.9%
+TC  +6: 2.2%

@@ -21,11 +21,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../include/blackjack_types.h"
 #include "../include/monte_carlo.h"
 #include "../include/counting_system.h"
 #include "../include/betting_strategy.h"
 #include "../include/visualizer.h"
+#include "../include/interactive_mode.h"
 
 /**
  * print_banner: Display project banner with description.
@@ -85,7 +87,7 @@ static void run_card_counting(void) {
     bet_init(10.0, 100.0);
     bet_print_ramp();
     
-    CountResults results;
+    CountingResults results;
     count_run_full_simulation(&config, strategy_table, num_entries,
                              100, &results);
     count_print_results(&results);
@@ -148,7 +150,15 @@ int main(int argc, char* argv[]) {
     if (strcmp(argv[1], "--strategy") == 0) run_basic_strategy();
     else if (strcmp(argv[1], "--counting") == 0) run_card_counting();
     else if (strcmp(argv[1], "--viz") == 0) generate_visualizations();
-    else printf("Usage: %s [--strategy|--counting|--viz]\n", argv[0]);
+    else if (strcmp(argv[1], "--play") == 0) {
+        printf("\nCargando estrategia para el modo interactivo...\n");
+        SimConfig config = {1000, 6, 0.75, 1.5, 3, true};
+        StrategyEntry strategy_table[500];
+        int num_entries = 0;
+        mc_build_strategy_table(strategy_table, &num_entries, &config);
+        run_interactive_game(strategy_table, num_entries);
+    }
+    else printf("Usage: %s [--strategy|--counting|--viz|--play]\n", argv[0]);
     
     return 0;
 }

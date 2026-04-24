@@ -19,6 +19,7 @@
  */
 
 #include "../include/shoe_utils.h"
+#include "../include/card_utils.h"  /* NEEDED: for card_init() */
 #include <stdlib.h>
 
 /**

@@ -119,4 +119,18 @@ void mc_build_strategy_table(StrategyEntry* table, int* num_entries,
  */
 void mc_print_strategy_table(const StrategyEntry* table, int num_entries);
 
+/**
+ * mc_calculate_basic_ev: Estimate EV of the computed strategy.
+ *
+ * Simulates many hands using the strategy table and returns
+ * average return as a percentage.
+ *
+ * @param table Strategy table
+ * @param num_entries Number of entries
+ * @param config Simulation parameters
+ * @return Expected value percentage (e.g. -0.5 means -0.5%)
+ */
+double mc_calculate_basic_ev(const StrategyEntry* table, int num_entries,
+                             const SimConfig* config);
+
 #endif /* MONTE_CARLO_H */

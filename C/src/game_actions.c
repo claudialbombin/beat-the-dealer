@@ -13,6 +13,8 @@
  */
 
 #include "../include/game_core.h"
+#include "../include/hand_utils.h"  /* NEEDED: for hand_add_card(), hand_best_value() */
+#include "../include/shoe_utils.h"   /* NEEDED: for shoe_deal_card() */
 #include <stdlib.h>
 
 /**
