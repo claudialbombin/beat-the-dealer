@@ -94,7 +94,22 @@ class Action(Enum):
     DOUBLE_DOWN = "D"   # Double bet, take one card
     SPLIT = "P"         # Split pair into two hands (P for "Pair split")
 
-
+class Suit(Enum):
+    """
+    Card suits for a standard French deck.
+    
+    In blackjack, suits don't affect strategy or card values.
+    They are included for complete card representation and
+    potential display/logging purposes.
+    
+    The string values use Unicode suit symbols:
+    ♥ = Hearts, ♦ = Diamonds, ♣ = Clubs, ♠ = Spades
+    """
+    HEARTS = "♥"
+    DIAMONDS = "♦"
+    CLUBS = "♣"
+    SPADES = "♠"
+    
 class HandStatus(Enum):
     """
     Tracks the current state of a blackjack hand throughout its lifecycle.
