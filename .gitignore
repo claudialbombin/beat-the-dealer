@@ -1,0 +1,40 @@
+# Generated output files (can be large)
+C/output/*
+python/output/*
+python/data/*
+
+# Compiled binaries
+C/bin/*
+C/obj/*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# C compiled objects
+*.o
+*.out
+*.exe
+
+# Strategy cache files
+strategy_cache.dat
+*.pkl
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Keep directory structure
+!C/output/.gitkeep
+!python/output/.gitkeep
+!python/data/.gitkeep
+!C/bin/.gitkeep
+!C/obj/.gitkeep
