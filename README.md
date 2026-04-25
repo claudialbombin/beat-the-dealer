@@ -766,7 +766,7 @@ This project is licensed under the MIT License.
 ```
 MIT License
 
-Copyright (c) 2024 Claudia Maria Lopez Bombin
+Copyright (c) 2026 Claudia Maria Lopez Bombin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
