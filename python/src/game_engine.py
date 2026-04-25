@@ -729,6 +729,8 @@ class BlackjackGame:
         continuous shuffle machines defeat this by never letting
         the count deviate far from zero.
         """
+        if card is None:
+            return
         self.running_count += card.hi_lo_val
     
     @property
@@ -783,12 +785,14 @@ class BlackjackGame:
             # Player's card (both face up)
             card = self.shoe.deal()
             self.update_count(card)
-            player.add(card)
+            if card is not None:
+                player.add(card)
             
             # Dealer's card (first face up, second face down)
             card = self.shoe.deal()
             self.update_count(card)
-            dealer.add(card)
+            if card is not None:
+                dealer.add(card)
         
         # Check for natural blackjack
         if player.is_blackjack:
@@ -861,7 +865,8 @@ class BlackjackGame:
         if action == Action.HIT:
             card = self.shoe.deal()
             self.update_count(card)
-            hand.add(card)
+            if card is not None:
+                hand.add(card)
             return [hand]
         
         elif action == Action.STAND:
@@ -872,7 +877,8 @@ class BlackjackGame:
             hand.bet *= 2  # Double the wager
             card = self.shoe.deal()
             self.update_count(card)
-            hand.add(card)
+            if card is not None:
+                hand.add(card)
             hand.status = HandStatus.DOUBLED  # Hand is complete
             return [hand]
         
@@ -888,11 +894,13 @@ class BlackjackGame:
             # Deal one card to each new hand
             card = self.shoe.deal()
             self.update_count(card)
-            h1.add(card)
+            if card is not None:
+                h1.add(card)
             
             card = self.shoe.deal()
             self.update_count(card)
-            h2.add(card)
+            if card is not None:
+                h2.add(card)
             
             return [h1, h2]
         
@@ -941,6 +949,8 @@ class BlackjackGame:
             # Dealer takes a card
             card = self.shoe.deal()
             self.update_count(card)
+            if card is None:
+                break
             dealer_hand.add(card)
         
         # Mark dealer as standing (unless busted)
@@ -1040,6 +1050,11 @@ class BlackjackGame:
         
         # Deal initial hands
         player_hand, dealer_hand = self.deal_initial(bet)
+        
+        # If the shoe ran out mid-deal, abort the round with no profit/loss
+        if not dealer_hand.cards or not player_hand.cards:
+            return 0.0
+        
         dealer_up = dealer_hand.cards[0]  # Dealer's visible card
         
         # Track all active hands (grows with splits)
