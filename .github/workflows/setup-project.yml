@@ -1,0 +1,67 @@
+name: 🃏 Setup Development Project Board
+
+# ---------------------------------------------------------------------------
+# This workflow creates a fully-populated GitHub Projects (v2) board for the
+# Beat the Dealer repository, including:
+#
+#   • Issue labels (13 labels covering domain, phase, and workflow)
+#   • A GitHub Projects v2 board linked to this repository
+#   • Custom fields: Priority (4 options), Component (8 options), Phase (4 options)
+#   • 20 richly-documented GitHub Issues organised by development phase:
+#       - Phase 2 — Enhancement  (10 issues)
+#       - Phase 3 — Advanced     ( 7 issues)
+#       - Ongoing                ( 3 issues)
+#
+# HOW TO RUN
+#   GitHub UI  →  Actions tab  →  "Setup Development Project Board"
+#             →  Run workflow  →  type  create  →  Run workflow
+#
+# PERMISSIONS
+#   Uses the built-in GITHUB_TOKEN with projects: write + issues: write.
+#   No personal access token (PAT) is needed.
+#
+# IDEMPOTENCY
+#   Labels are created with --force, so re-running is safe.
+#   Running a second time will create a second project board (that is harmless).
+# ---------------------------------------------------------------------------
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: >
+          Type  create  to confirm.
+          WARNING: this will create ~20 GitHub Issues and a new project board.
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+  projects: write
+
+jobs:
+  setup-project:
+    name: Create & Populate Project Board
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'create'
+
+    steps:
+      # 1. Checkout so the Python script is available
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Python is pre-installed on ubuntu-latest; no extra setup needed
+      - name: Verify Python version
+        run: python --version
+
+      # 3. Run the project-setup script
+      #    The script uses the  gh  CLI (pre-installed on ubuntu-latest) which
+      #    automatically picks up the GH_TOKEN environment variable below.
+      - name: Run project setup script
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/scripts/setup_project.py \
+            --owner "${{ github.repository_owner }}" \
+            --repo  "${{ github.event.repository.name }}"
