@@ -99,7 +99,7 @@ def create_project(owner: str) -> tuple[int, str, str]:
     print("\n── Creating project board ────────────────────────────────────────")
     data = gh("project", "create",
               "--owner", owner,
-              "--title", "Beat the Dealer \u2014 Development Roadmap",
+              "--title", "Beat the Dealer - Development Roadmap",
               "--format", "json")
     number = data["number"]
     project_id = data["id"]

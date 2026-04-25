@@ -14,7 +14,7 @@ name: 🃏 Setup Development Project Board
 #
 # HOW TO RUN
 #   GitHub UI  →  Actions tab  →  "Setup Development Project Board"
-#             →  Run workflow  →  type  create  →  Run workflow
+#             →  Run workflow  →  type "create"  →  Run workflow
 #
 # PERMISSIONS
 #   Uses the built-in GITHUB_TOKEN with projects: write + issues: write.
@@ -30,7 +30,7 @@ on:
     inputs:
       confirm:
         description: >
-          Type  create  to confirm.
+          Type "create" to confirm.
           WARNING: this will create ~20 GitHub Issues and a new project board.
         required: true
         default: ''
