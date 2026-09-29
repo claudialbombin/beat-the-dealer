@@ -1,164 +1,123 @@
-/**
- * @file main.c
- * @brief Main entry point - 5 functions
+/*
+ * bjsim: simulate many rounds of 6-deck blackjack with Hi-Lo counting and
+ * write per-true-count statistics as CSV.
  *
- * Orchestrates the complete project pipeline:
- * 1. Build basic strategy via Monte Carlo simulation
- * 2. Simulate card counting to measure advantage
- * 3. Generate visualizations of all results
+ *   ./bin/bjsim --rounds 200000000 --threads 8 --out ../results/counting_c.csv
  *
- * Supports multiple execution modes via command-line arguments:
- * --strategy: Build and display basic strategy only
- * --counting: Run card counting simulation only
- * --viz: Generate visualizations only
- * (no args): Execute complete analysis
- *
- * Author: Claudia Maria Lopez Bombin
- * License: MIT
- * Repository: github.com/claudia-lopez/blackjack-monte-carlo
+ * Each thread plays its own independent shoe with its own RNG stream; the
+ * per-bin sums are merged at the end.
  */
+#include "bj.h"
 
+#include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "../include/blackjack_types.h"
-#include "../include/monte_carlo.h"
-#include "../include/counting_system.h"
-#include "../include/betting_strategy.h"
-#include "../include/visualizer.h"
-#include "../include/interactive_mode.h"
 
-/**
- * print_banner: Display project banner with description.
- *
- * Shows project name, features, and ideal use cases.
- * The banner provides context for interview portfolios.
- */
-static void print_banner(void) {
-    printf("\n");
-    printf("============================================\n");
-    printf("  BLACKJACK MONTE CARLO SOLVER\n");
-    printf("  Hi-Lo Card Counting System\n");
-    printf("============================================\n");
-    printf("  Demonstrates:\n");
-    printf("  - Monte Carlo simulation methods\n");
-    printf("  - Decision optimization\n");
-    printf("  - Card counting algorithms\n");
-    printf("  - Risk analysis\n");
-    printf("============================================\n\n");
+typedef struct {
+    const Rules *rules;
+    const Strategy *st;
+    long long rounds;
+    uint64_t seed;
+    Stats stats;
+} Job;
+
+static void *worker(void *arg) {
+    Job *j = arg;
+    simulate(j->rules, j->st, j->rounds, j->seed, &j->stats);
+    return NULL;
 }
 
-/**
- * run_basic_strategy: Build and display basic strategy.
- *
- * Executes Monte Carlo simulation to compute optimal strategy,
- * displays the complete table, and calculates expected value.
- */
-static void run_basic_strategy(void) {
-    printf("\n=== BUILDING BASIC STRATEGY ===\n\n");
-    
-    SimConfig config = {10000, 6, 0.75, 1.5, 3, true};
-    StrategyEntry strategy_table[500];
-    int num_entries = 0;
-    
-    mc_build_strategy_table(strategy_table, &num_entries, &config);
-    mc_print_strategy_table(strategy_table, num_entries);
-    
-    double basic_ev = mc_calculate_basic_ev(strategy_table, num_entries, &config);
-    printf("\nBasic Strategy EV: %.3f%%\n", basic_ev);
-    printf("House Edge: %.3f%%\n", -basic_ev);
+static void usage(const char *prog) {
+    fprintf(stderr,
+            "usage: %s [--rounds N] [--threads T] [--seed S] [--strategy CSV] [--out CSV] [--s17]\n",
+            prog);
 }
 
-/**
- * run_card_counting: Simulate card counting advantage.
- *
- * Runs counting simulation with optimal strategy and dynamic
- * betting. Quantifies the advantage gained through Hi-Lo.
- */
-static void run_card_counting(void) {
-    printf("\n=== SIMULATING CARD COUNTING ===\n\n");
-    
-    SimConfig config = {10000, 6, 0.75, 1.5, 3, true};
-    StrategyEntry strategy_table[500];
-    int num_entries = 0;
-    
-    mc_build_strategy_table(strategy_table, &num_entries, &config);
-    bet_init(10.0, 100.0);
-    bet_print_ramp();
-    
-    CountingResults results;
-    count_run_full_simulation(&config, strategy_table, num_entries,
-                             100, &results);
-    count_print_results(&results);
-}
+int main(int argc, char **argv) {
+    long long rounds = 10000000;
+    int threads = 4;
+    uint64_t seed = 2026;
+    const char *strategy_path = "../web/data/strategy.csv";
+    const char *out_path = NULL;
+    Rules rules = {.decks = 6, .h17 = true, .bj_payout = 1.5, .das = true, .penetration = 0.75};
 
-/**
- * generate_visualizations: Create all output visualizations.
- *
- * Generates strategy tables, EV analysis, and distribution
- * charts in text format for universal readability.
- */
-static void generate_visualizations(void) {
-    printf("\n=== GENERATING VISUALIZATIONS ===\n\n");
-    
-    SimConfig config = {10000, 6, 0.75, 1.5, 3, true};
-    StrategyEntry strategy_table[500];
-    int num_entries = 0;
-    
-    mc_build_strategy_table(strategy_table, &num_entries, &config);
-    
-    viz_strategy_heatmap(strategy_table, num_entries, "output/strategy.txt");
-    
-    TrueCountData tc_data[5] = {
-        {-3, -1.5, 0.5, 1000},
-        {0, -0.5, 0.3, 5000},
-        {2, 0.5, 0.4, 2000},
-        {4, 1.8, 0.6, 800},
-        {6, 2.5, 0.8, 200}
-    };
-    
-    viz_ev_vs_true_count(tc_data, 5, "output/ev_vs_tc.txt");
-    viz_counting_advantage(1.2, -0.5, "output/advantage.txt");
-    viz_tc_distribution(tc_data, 5, "output/distribution.txt");
-    
-    double bankroll[] = {10000, 10100, 10250, 10100, 10400, 10700};
-    viz_bankroll_evolution(bankroll, 6, "output/bankroll.txt");
-    
-    printf("\nAll visualizations saved to output/\n");
-}
-
-/**
- * main: Entry point with command-line argument dispatching.
- *
- * Supports modes: --strategy, --counting, --viz, or full analysis.
- * Seeds random number generator for reproducibility.
- */
-int main(int argc, char* argv[]) {
-    print_banner();
-    srand(time(NULL));
-    
-    if (argc == 1) {
-        printf("Running complete analysis...\n");
-        run_basic_strategy();
-        run_card_counting();
-        generate_visualizations();
-        printf("\n=== ANALYSIS COMPLETE ===\n");
-        return 0;
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        const char *v = i + 1 < argc ? argv[i + 1] : NULL;
+        if (!strcmp(a, "--rounds") && v) { rounds = atoll(v); i++; }
+        else if (!strcmp(a, "--threads") && v) { threads = atoi(v); i++; }
+        else if (!strcmp(a, "--seed") && v) { seed = strtoull(v, NULL, 10); i++; }
+        else if (!strcmp(a, "--strategy") && v) { strategy_path = v; i++; }
+        else if (!strcmp(a, "--out") && v) { out_path = v; i++; }
+        else if (!strcmp(a, "--s17")) rules.h17 = false;
+        else { usage(argv[0]); return 2; }
     }
-    
-    if (strcmp(argv[1], "--strategy") == 0) run_basic_strategy();
-    else if (strcmp(argv[1], "--counting") == 0) run_card_counting();
-    else if (strcmp(argv[1], "--viz") == 0) generate_visualizations();
-    else if (strcmp(argv[1], "--play") == 0) {
-        printf("\nCargando estrategia para el modo interactivo...\n");
-        SimConfig config = {1000, 6, 0.75, 1.5, 3, true};
-        StrategyEntry strategy_table[500];
-        int num_entries = 0;
-        mc_build_strategy_table(strategy_table, &num_entries, &config);
-        run_interactive_game(strategy_table, num_entries);
+    if (rounds <= 0 || threads <= 0 || threads > 256) { usage(argv[0]); return 2; }
+
+    Strategy st;
+    if (strategy_load(&st, strategy_path) != 0) {
+        fprintf(stderr, "could not read strategy from %s (run `python -m blackjack solve` first)\n",
+                strategy_path);
+        return 1;
     }
-    else printf("Usage: %s [--strategy|--counting|--viz|--play]\n", argv[0]);
-    
+
+    Job *jobs = calloc((size_t)threads, sizeof *jobs);
+    pthread_t *tids = calloc((size_t)threads, sizeof *tids);
+    if (!jobs || !tids) return 1;
+    struct timespec t0, t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+    for (int t = 0; t < threads; t++) {
+        jobs[t].rules = &rules;
+        jobs[t].st = &st;
+        jobs[t].rounds = rounds / threads + (t < rounds % threads);
+        jobs[t].seed = seed * 1000003ULL + (uint64_t)t;
+        pthread_create(&tids[t], NULL, worker, &jobs[t]);
+    }
+    Stats all = {0};
+    for (int t = 0; t < threads; t++) {
+        pthread_join(tids[t], NULL);
+        for (int b = 0; b < TC_BINS; b++) {
+            all.n[b] += jobs[t].stats.n[b];
+            all.sum[b] += jobs[t].stats.sum[b];
+            all.sumsq[b] += jobs[t].stats.sumsq[b];
+            for (int k = 0; k < OUTCOMES; k++) all.hist[b][k] += jobs[t].stats.hist[b][k];
+        }
+        all.rounds += jobs[t].stats.rounds;
+        all.shoes += jobs[t].stats.shoes;
+    }
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double secs = (double)(t1.tv_sec - t0.tv_sec) + (double)(t1.tv_nsec - t0.tv_nsec) / 1e9;
+
+    double sum = 0, sumsq = 0;
+    for (int b = 0; b < TC_BINS; b++) { sum += all.sum[b]; sumsq += all.sumsq[b]; }
+    double mean = sum / (double)all.rounds;
+    double se = sqrt((sumsq / (double)all.rounds - mean * mean) / (double)all.rounds);
+    fprintf(stderr, "%lld rounds, %lld shoes in %.1fs (%.1fM rounds/s)\n",
+            all.rounds, all.shoes, secs, (double)all.rounds / secs / 1e6);
+    fprintf(stderr, "player edge: %+.4f%% +/- %.4f%% (95%% CI)\n", 100 * mean, 196 * se);
+
+    FILE *out = out_path ? fopen(out_path, "w") : stdout;
+    if (!out) { perror(out_path); return 1; }
+    fprintf(out, "# bjsim: %d decks, %s, %.0f%% penetration, seed %llu, %d threads\n",
+            rules.decks, rules.h17 ? "H17" : "S17", 100 * rules.penetration,
+            (unsigned long long)seed, threads);
+    fprintf(out, "tc,n,sum,sumsq");
+    for (int k = 0; k < OUTCOMES; k++) fprintf(out, ",h%+.1f", (k - OUTCOMES / 2) / 2.0);
+    fprintf(out, "\n");
+    for (int b = 0; b < TC_BINS; b++) {
+        if (!all.n[b]) continue;
+        fprintf(out, "%d,%lld,%.6f,%.6f", b + TC_MIN, all.n[b], all.sum[b], all.sumsq[b]);
+        for (int k = 0; k < OUTCOMES; k++) fprintf(out, ",%lld", all.hist[b][k]);
+        fprintf(out, "\n");
+    }
+    fprintf(out, "meta,%lld,%lld,0", all.rounds, all.shoes);
+    for (int k = 0; k < OUTCOMES; k++) fprintf(out, ",0");
+    fprintf(out, "\n");
+    if (out != stdout) fclose(out);
+    free(jobs);
+    free(tids);
     return 0;
 }

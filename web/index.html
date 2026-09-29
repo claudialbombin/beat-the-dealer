@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beat the Dealer · Blackjack by Monte Carlo</title>
+  <meta name="description" content="Blackjack basic strategy derived by Monte Carlo simulation, verified against an exact solver, and a Hi-Lo card counting analysis over a billion simulated rounds. Play, drill and experiment." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='3' width='22' height='26' rx='4' fill='%230e5a43'/%3E%3Ctext x='16' y='22' font-size='14' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='700'%3E21%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">21</span>
+        <div>
+          <h1>Beat the Dealer</h1>
+          <p class="tagline">Blackjack strategy derived by Monte Carlo, checked against an exact solver, and stress-tested on a billion simulated rounds.</p>
+        </div>
+      </div>
+      <nav class="header-links">
+        <a href="https://github.com/claudialbombin/beat-the-dealer" target="_blank" rel="noopener">Source on GitHub ↗</a>
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
+      </nav>
+    </div>
+    <div class="wrap">
+      <div class="stat-row" id="hero-stats" aria-live="polite"></div>
+    </div>
+    <div class="wrap">
+      <div class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" data-tab="play" id="tab-play">Play</button>
+        <button role="tab" data-tab="drill" id="tab-drill">Drill</button>
+        <button role="tab" data-tab="strategy" id="tab-strategy">Strategy chart</button>
+        <button role="tab" data-tab="lab" id="tab-lab">Monte Carlo lab</button>
+        <button role="tab" data-tab="counting" id="tab-counting">Card counting</button>
+        <button role="tab" data-tab="method" id="tab-method">How it works</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+    <div id="load-error" class="notice error" hidden></div>
+
+    <!-- ================================================================ PLAY -->
+    <section class="panel" id="panel-play" role="tabpanel" aria-labelledby="tab-play" hidden>
+      <div class="play-layout">
+        <div class="table-col">
+          <div class="felt" id="felt">
+            <div class="shoe-info">
+              <span id="shoe-label">Shoe</span>
+              <div class="shoe-bar" title="Cards dealt from the shoe; the line marks the cut card"><div id="shoe-fill"></div><div id="shoe-cut"></div></div>
+            </div>
+            <div class="seat dealer-seat">
+              <div class="seat-label">Dealer <span class="total" id="dealer-total"></span></div>
+              <div class="cards" id="dealer-cards"></div>
+            </div>
+            <div class="felt-print" aria-hidden="true">
+              <span>Blackjack pays <b id="felt-payout">3 to 2</b></span>
+              <span id="felt-h17">Dealer hits soft 17</span>
+            </div>
+            <div class="seat player-seat">
+              <div class="hands" id="player-hands"></div>
+            </div>
+            <div class="round-msg" id="round-msg" aria-live="polite"></div>
+          </div>
+
+          <div class="controls">
+            <div class="actions" id="actions">
+              <button class="act" data-act="H" disabled><span>Hit</span><kbd>H</kbd></button>
+              <button class="act" data-act="S" disabled><span>Stand</span><kbd>S</kbd></button>
+              <button class="act" data-act="D" disabled><span>Double</span><kbd>D</kbd></button>
+              <button class="act" data-act="P" disabled><span>Split</span><kbd>P</kbd></button>
+            </div>
+            <div class="bet-row">
+              <label class="bet-label" for="bet">Bet</label>
+              <div class="stepper">
+                <button id="bet-down" aria-label="Decrease bet">−</button>
+                <output id="bet-out">1</output>
+                <button id="bet-up" aria-label="Increase bet">+</button>
+              </div>
+              <span class="unit">units</span>
+              <span class="bet-hint" id="bet-hint"></span>
+              <button class="primary" id="deal-btn">Deal <kbd>Space</kbd></button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-col">
+          <div class="card coach" id="coach">
+            <h3>Coach</h3>
+            <div id="coach-body" class="coach-body"><p class="muted">Deal a hand. After every decision you'll see whether it matched basic strategy and what it cost in expected value.</p></div>
+          </div>
+
+          <div class="card">
+            <div class="toggles">
+              <label class="switch"><input type="checkbox" id="opt-coach" checked /><span></span>Coach feedback</label>
+              <label class="switch"><input type="checkbox" id="opt-hint" /><span></span>Show the right play before I act</label>
+              <label class="switch"><input type="checkbox" id="opt-count" /><span></span>Show the Hi-Lo count</label>
+              <label class="switch"><input type="checkbox" id="opt-quiz" /><span></span>Quiz me on the count every 5 hands</label>
+            </div>
+            <div class="count-box" id="count-box" hidden>
+              <div><span class="k">Running</span><span class="v" id="rc">0</span></div>
+              <div><span class="k">True</span><span class="v" id="tc">0.0</span></div>
+              <div><span class="k">Decks left</span><span class="v" id="decks-left">6.0</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Session</h3>
+            <div class="session-grid">
+              <div><span class="k">Hands</span><span class="v" id="s-hands">0</span></div>
+              <div><span class="k">Net</span><span class="v" id="s-net">0</span></div>
+              <div><span class="k">Accuracy</span><span class="v" id="s-acc">–</span></div>
+              <div><span class="k">EV given up</span><span class="v" id="s-cost">0.00</span></div>
+            </div>
+            <div class="spark" id="s-spark" aria-label="Bankroll over the session"></div>
+            <details class="rules-box">
+              <summary>Table rules</summary>
+              <div class="rules-form" id="play-rules"></div>
+              <p class="fine">Changing a rule reshuffles and resets the coach to the right strategy for that game.</p>
+            </details>
+            <button class="ghost small" id="reset-session">Reset session</button>
+          </div>
+        </aside>
+      </div>
+      <dialog id="quiz-dialog">
+        <form method="dialog" id="quiz-form">
+          <h3>Count check</h3>
+          <p>What is the running count right now?</p>
+          <input type="number" id="quiz-input" inputmode="numeric" step="1" required />
+          <p id="quiz-result" class="quiz-result" aria-live="polite"></p>
+          <div class="dialog-actions">
+            <button type="button" class="ghost" id="quiz-skip">Skip</button>
+            <button type="submit" class="primary" id="quiz-submit">Check</button>
+          </div>
+        </form>
+      </dialog>
+    </section>
+
+    <!-- ================================================================ DRILL -->
+    <section class="panel" id="panel-drill" role="tabpanel" aria-labelledby="tab-drill" hidden>
+      <div class="section-head">
+        <h2>Decision drill</h2>
+        <p>Rapid-fire two-card decisions. No dealer play, just the call. The map on the right fills in as you learn the chart.</p>
+      </div>
+      <div class="drill-layout">
+        <div>
+          <div class="chips" id="drill-filter" role="radiogroup" aria-label="Which hands">
+            <button data-f="all" class="on">All hands</button>
+            <button data-f="hard">Hard</button>
+            <button data-f="soft">Soft</button>
+            <button data-f="pair">Pairs</button>
+            <button data-f="close">Close calls</button>
+            <button data-f="missed">My mistakes</button>
+          </div>
+          <label class="switch inline"><input type="checkbox" id="drill-freq" checked /><span></span>Deal hands as often as they really occur</label>
+          <div class="felt small-felt" id="drill-felt">
+            <div class="seat"><div class="seat-label">Dealer shows</div><div class="cards" id="drill-dealer"></div></div>
+            <div class="seat"><div class="seat-label">You have <span class="total" id="drill-total"></span></div><div class="cards" id="drill-player"></div></div>
+          </div>
+          <div class="actions" id="drill-actions">
+            <button class="act" data-act="H"><span>Hit</span><kbd>H</kbd></button>
+            <button class="act" data-act="S"><span>Stand</span><kbd>S</kbd></button>
+            <button class="act" data-act="D"><span>Double</span><kbd>D</kbd></button>
+            <button class="act" data-act="P"><span>Split</span><kbd>P</kbd></button>
+          </div>
+          <div class="card drill-feedback" id="drill-feedback" aria-live="polite"></div>
+        </div>
+        <aside>
+          <div class="card">
+            <div class="session-grid">
+              <div><span class="k">Answered</span><span class="v" id="d-n">0</span></div>
+              <div><span class="k">Accuracy</span><span class="v" id="d-acc">–</span></div>
+              <div><span class="k">Streak</span><span class="v" id="d-streak">0</span></div>
+              <div><span class="k">Best</span><span class="v" id="d-best">0</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Your mastery map</h3>
+            <p class="fine">Each cell is one chart decision. Green: always right. Red: missed at least once. Grey: not seen yet.</p>
+            <div id="mastery"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================================================================ STRATEGY -->
+    <section class="panel" id="panel-strategy" role="tabpanel" aria-labelledby="tab-strategy" hidden>
+      <div class="section-head">
+        <h2>The strategy chart, and why each cell is what it is</h2>
+        <p>Hover a cell to see the expected value of every action. Change a rule and the chart and house edge are re-solved exactly in your browser; cells that change are outlined.</p>
+      </div>
+      <div class="strategy-top">
+        <div class="rules-form inline-rules" id="chart-rules"></div>
+        <div class="edge-tile" id="edge-tile"></div>
+      </div>
+      <div class="chart-toolbar">
+        <div class="chips" id="color-mode" role="radiogroup" aria-label="Colour cells by">
+          <button data-m="action" class="on">Colour by action</button>
+          <button data-m="margin">Colour by how close the call is</button>
+        </div>
+        <div class="legend" id="chart-legend"></div>
+      </div>
+      <div class="grids" id="grids"></div>
+      <div class="card cell-detail" id="cell-detail"><p class="muted">Click any cell for the full breakdown.</p></div>
+      <div class="card">
+        <h3>How often the dealer busts</h3>
+        <p class="fine">Exact probabilities by upcard (given no dealer blackjack). Low upcards bust often, which is why you stand on stiff hands against them.</p>
+        <div id="bust-chart" class="chart-box short"></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ LAB -->
+    <section class="panel" id="panel-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
+      <div class="section-head">
+        <h2>Watch Monte Carlo find the answer</h2>
+        <p>Pick a decision and simulate it live in your browser. Each line is an action's estimated expected value with its 95% confidence band; the dashed lines are the exact answers the estimates should converge to.</p>
+      </div>
+      <div class="lab-controls card">
+        <div class="field">
+          <label for="lab-kind">Hand</label>
+          <select id="lab-kind"><option value="hard">Hard total</option><option value="soft">Soft total</option><option value="pair">Pair</option></select>
+        </div>
+        <div class="field"><label for="lab-total">Value</label><select id="lab-total"></select></div>
+        <div class="field"><label for="lab-up">Dealer upcard</label><select id="lab-up"></select></div>
+        <label class="switch"><input type="checkbox" id="lab-crn" checked /><span></span>Common random numbers</label>
+        <div class="lab-buttons">
+          <button class="primary" id="lab-run">Run</button>
+          <button class="ghost" id="lab-reset">Reset</button>
+        </div>
+      </div>
+      <div class="lab-layout">
+        <div class="card">
+          <div id="lab-chart" class="chart-box tall"></div>
+        </div>
+        <aside class="card">
+          <h3 id="lab-title">Estimates</h3>
+          <div id="lab-table"></div>
+          <div id="lab-verdict" class="verdict"></div>
+        </aside>
+      </div>
+      <div class="explain-grid">
+        <div class="card"><h4>Backward induction</h4><p>After you hit, the rest of the hand must be played well too. The solver handles states in an order where everything a hit can lead to is already solved (hard 21→11, soft 21→12, hard 10→4), so the continuation always uses the best policy found so far. The original version of this project continued with "hit until 17", which systematically undervalued hitting.</p></div>
+        <div class="card"><h4>Common random numbers</h4><p>With the toggle on, every action faces the <em>same</em> dealer hand and the same next cards. The noise that both estimates share cancels in their difference, so the right action is identified with far fewer hands. Turn it off and watch the “hands needed” figure jump.</p></div>
+        <div class="card"><h4>How many hands is enough?</h4><p>The standard error falls as 1/√N: 100× more hands buys 10× more precision. Cells where two actions differ by less than 0.1% of a bet need millions of hands each, which is why the published solver uses 2,000,000 hands per action.</p></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ COUNTING -->
+    <section class="panel" id="panel-counting" role="tabpanel" aria-labelledby="tab-counting" hidden>
+      <div class="section-head">
+        <h2>Does counting cards actually work?</h2>
+        <p id="count-intro"></p>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <h3>Player edge by true count</h3>
+          <p class="fine">Mean profit per unit bet, grouped by the true count when the bet was placed (floored: +2 means 2.0 to 2.99). Whiskers are 95% confidence intervals.</p>
+          <div id="ev-tc-chart" class="chart-box"></div>
+          <div id="ev-tc-freq" class="chart-box short"></div>
+        </div>
+        <div class="card">
+          <h3>Design a betting ramp</h3>
+          <p class="fine">Set how many units to bet at each true count. The results use the simulated per-count outcomes directly. Drag a bar (or focus it and use the arrow keys). Bet 0 to leave the table (“Wonging out”).</p>
+          <div class="chips small-chips" id="ramp-presets"></div>
+          <div class="ramp" id="ramp"></div>
+          <div class="ramp-results" id="ramp-results"></div>
+          <div class="field-row">
+            <label for="bankroll">Bankroll</label>
+            <input type="range" id="bankroll" min="50" max="2000" step="50" value="400" />
+            <output id="bankroll-out"></output>
+          </div>
+          <div class="ror" id="ror"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Simulate 200 counters</h3>
+            <p class="fine" id="paths-note">Each path plays 20,000 rounds with your ramp and bankroll, drawing (true count, outcome) pairs from the billion-round simulation. A path that hits zero is ruined.</p>
+          </div>
+          <button class="primary" id="paths-run">Run simulation</button>
+        </div>
+        <div id="paths-chart" class="chart-box tall"></div>
+        <div id="paths-summary" class="paths-summary"></div>
+      </div>
+      <div class="card speed">
+        <div class="card-head">
+          <div>
+            <h3>Speed-count drill</h3>
+            <p class="fine">Cards flash one at a time. Keep the Hi-Lo running count (2–6: +1, 7–9: 0, 10–A: −1) and type it at the end.</p>
+          </div>
+          <div class="speed-controls">
+            <label>Cards <select id="speed-n"><option>10</option><option selected>20</option><option>52</option></select></label>
+            <label>Speed <select id="speed-ms"><option value="1200">Slow</option><option value="700" selected>Medium</option><option value="400">Fast</option><option value="250">Casino</option></select></label>
+            <button class="primary" id="speed-go">Start</button>
+          </div>
+        </div>
+        <div class="speed-stage" id="speed-stage"><p class="muted">Press start.</p></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ METHOD -->
+    <section class="panel prose" id="panel-method" role="tabpanel" aria-labelledby="tab-method" hidden>
+      <div id="method-body"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>Built by <a href="https://github.com/claudialbombin" target="_blank" rel="noopener">Claudia María López Bombín</a>. Python (NumPy) solver, C simulator, vanilla JavaScript front end. MIT licence. An educational project, not gambling advice.</p>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

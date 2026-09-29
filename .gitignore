@@ -1,40 +1,21 @@
-# Generated output files (can be large)
-C/output/*
-python/output/*
-python/data/*
-
-# Compiled binaries
-C/bin/*
-C/obj/*
-
-# Python cache
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+.venv/
+venv/
 
-# C compiled objects
-*.o
-*.out
-*.exe
+# C build output
+C/build/
+C/bin/
 
-# Strategy cache files
-strategy_cache.dat
-*.pkl
-
-# IDE files
+# Editors / OS
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
-
-# macOS
 .DS_Store
 
-# Keep directory structure
-!C/output/.gitkeep
-!python/output/.gitkeep
-!python/data/.gitkeep
-!C/bin/.gitkeep
-!C/obj/.gitkeep
+# Node (only used to run the JS tests)
+node_modules/

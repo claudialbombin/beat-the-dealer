@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: C simulator (build + unit tests)
+        run: make -C C test
+      - name: Python (solvers, engine, C cross-check)
+        run: |
+          pip install -e "python[dev]"
+          pytest -q python/tests
+      - name: JavaScript (engine + exact solver vs Python)
+        run: npm test --prefix web
