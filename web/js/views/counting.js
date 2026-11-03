@@ -147,6 +147,7 @@ function runPaths() {
   setTimeout(() => {
     pathsResult = simulatePaths(bins, app.counting.outcomes, ramp, { players: 200, rounds: 20000, bankroll, seed: Math.floor(Math.random() * 1e9) });
     pathsResult.bankroll = bankroll;
+    drawPaths.fresh = true;
     btn.disabled = false;
     btn.textContent = "Run again";
     drawPaths();
@@ -169,10 +170,12 @@ function drawPaths() {
   });
   const P = (arr) => R.xs.map((x, i) => ({ x, y: arr[i] }));
   const band = (a, b) => R.xs.map((x, i) => ({ x, lo: a[i], hi: b[i] }));
-  for (let k = 0; k < 14; k++) plot.line(R.xs.map((x, i) => ({ x, y: R.paths[k][i] })), { color: "var(--ink-2)", width: 1, opacity: 0.25 });
+  const draw = drawPaths.fresh ? 1400 : 0; // animate only right after a new run, not on resize
+  drawPaths.fresh = false;
+  for (let k = 0; k < 14; k++) plot.line(R.xs.map((x, i) => ({ x, y: R.paths[k][i] })), { color: "var(--ink-2)", width: 1, opacity: 0.25, draw });
   plot.band(band(R.p05, R.p95), { color: "var(--a-S)", opacity: 0.12 });
   plot.band(band(R.p25, R.p75), { color: "var(--a-S)", opacity: 0.22 });
-  plot.line(P(R.p50), { color: "var(--a-S)", width: 2.5 });
+  plot.line(P(R.p50), { color: "var(--a-S)", width: 2.5, draw });
   plot.hline(R.bankroll, { color: "var(--ink-2)", label: "starting bankroll" });
   plot.hover((xv) => {
     let i = Math.round((xv / R.xs[R.xs.length - 1]) * (R.xs.length - 1));

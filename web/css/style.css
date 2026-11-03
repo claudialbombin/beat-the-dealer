@@ -258,8 +258,21 @@ select, input[type="number"] {
 .pcard.back > * { display: none; }
 .cards .pcard:first-child { margin-left: 0; }
 .cards { padding-left: 0; }
-@keyframes deal { from { transform: translateY(-14px) scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .pcard { animation: none; } }
+/* Cards slide in from the shoe (top right). Only newly dealt cards animate:
+   play.js marks cards that were already on the table as .settled. */
+@keyframes deal {
+  from { transform: translate(var(--from-x, 120px), var(--from-y, -90px)) rotate(10deg) scale(0.9); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: none; opacity: 1; }
+}
+.pcard { animation-duration: 0.34s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1); }
+.pcard.settled { animation: none; }
+/* The dealer's hole card turns over instead of sliding in. */
+@keyframes flip {
+  0%   { transform: perspective(500px) rotateY(90deg); }
+  100% { transform: perspective(500px) rotateY(0); }
+}
+.pcard.flip { animation: flip 0.32s ease-out both; }
 
 .shoe-info { position: absolute; top: 14px; right: 18px; display: flex; align-items: center; gap: 8px; font-size: 0.72rem; opacity: 0.8; }
 .shoe-bar { width: 80px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.2); position: relative; overflow: hidden; }
@@ -270,7 +283,11 @@ select, input[type="number"] {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); color: #fff;
   padding: 8px 18px; border-radius: 999px; font-weight: 600; pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.2s;
 }
-.round-msg.show { opacity: 1; }
+.round-msg.show { opacity: 1; animation: pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+.round-msg.win  { background: #0c6b2e; }
+.round-msg.lose { background: #7c1f28; }
+.round-msg.push { background: rgba(0, 0, 0, 0.8); }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(0.7); } to { transform: translate(-50%, -50%) scale(1); } }
 
 .controls { margin-top: 14px; }
 .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -462,4 +479,33 @@ table.plain td.num { text-align: right; }
   .pipeline { grid-template-columns: 1fr; }
   .pipeline > div::after { display: none; }
   .small-felt { flex-direction: column; gap: 14px; }
+}
+
+/* ---------------------------------------------------------------- motion
+   Small, purposeful animations: they mark what just changed. Everything here
+   is switched off under prefers-reduced-motion (bottom of this block). */
+.panel:not([hidden]) { animation: panel-in 0.28s ease-out both; }
+@keyframes panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.hand .result.pop { animation: chip-pop 0.36s cubic-bezier(0.3, 1.6, 0.5, 1) both; display: inline-block; }
+@keyframes chip-pop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.coach-body.enter > * { animation: slide-in 0.28s ease-out both; }
+.coach-body.enter > *:nth-child(2) { animation-delay: 0.04s; }
+.coach-body.enter > *:nth-child(3) { animation-delay: 0.08s; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.coach-body.enter .badge.no { animation: shake 0.4s ease-in-out 0.1s both; }
+@keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+.v.bump { animation: bump 0.4s ease-out; }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+
+.grids.intro td { animation: cell-in 0.36s ease-out both; animation-delay: var(--d, 0ms); }
+@keyframes cell-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.sgrid td.flash { animation: flash 0.9s ease-out 2; }
+@keyframes flash { 0%, 100% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px #f2c14e; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pcard, .pcard.flip, .round-msg.show, .panel:not([hidden]), .hand .result.pop, .coach-body.enter > *,
+  .coach-body.enter .badge.no, .v.bump, .grids.intro td, .sgrid td.flash { animation: none !important; }
 }

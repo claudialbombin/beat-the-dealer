@@ -66,12 +66,19 @@ function tooltipHTML(kind, total, up) {
   return `<b>${describeState(kind, total, up)}</b><br>Play: <b>${best}</b> · margin ${(100 * margin(evs, kind)).toFixed(2)}%<div style="margin-top:4px">${rows}</div>`;
 }
 
+let intro = true; // cascade the cells in the first time the chart is shown
+let previous = null; // chart before the last rule change, to flash what moved
+
 function grid(kind, title) {
+  let rowIdx = 0;
   const table = h("table", { class: "sgrid", "aria-label": title });
   table.append(h("tr", {}, h("th", { class: "row" }, ""), ...UPCARDS.map((u) => h("th", { scope: "col" }, upcardLabel(u)))));
   for (const r of ROWS[kind]) {
     const tr = h("tr", {}, h("th", { class: "row", scope: "row" }, rowLabel(kind, r)));
+    let colIdx = 0;
+    rowIdx++;
     for (const u of UPCARDS) {
+      colIdx++;
       const code = cellCode(sol, kind, r, u);
       const base = cellCode(app.exact, kind, r, u);
       const evs = cellEVs(sol, kind, r, u);
@@ -84,6 +91,8 @@ function grid(kind, title) {
         td.style.color = c.fg;
       } else td.className = cls;
       if (code !== base) td.classList.add("changed");
+      if (intro) td.style.setProperty("--d", `${rowIdx * 22 + colIdx * 14}ms`);
+      if (previous && cellCode(previous, kind, r, u) !== code) td.classList.add("flash");
       if (selected && selected.kind === kind && selected.total === r && selected.up === u) td.classList.add("sel");
       td.addEventListener("pointerenter", (e) => showTip(tooltipHTML(kind, r, u), e.clientX, e.clientY));
       td.addEventListener("pointermove", (e) => showTip(tooltipHTML(kind, r, u), e.clientX, e.clientY));
@@ -103,7 +112,12 @@ function grid(kind, title) {
 }
 
 function renderGrids() {
-  $("#grids").replaceChildren(grid("hard", "Hard totals"), grid("soft", "Soft totals"), grid("pair", "Pairs"));
+  const box = $("#grids");
+  box.classList.toggle("intro", intro);
+  box.replaceChildren(grid("hard", "Hard totals"), grid("soft", "Soft totals"), grid("pair", "Pairs"));
+  if (intro) setTimeout(() => box.classList.remove("intro"), 1200);
+  intro = false;
+  previous = null;
   const legend = $("#chart-legend");
   if (mode === "action")
     legend.innerHTML = ["H Hit", "S Stand", "D Double (else hit)", "Ds Double (else stand)", "P Split", "· Don't split"]
@@ -212,6 +226,7 @@ export function init(a) {
   sol = app.exact;
   rulesControls($("#chart-rules"), rules, (r) => {
     rules = r;
+    previous = sol;
     sol = isDefault() ? app.exact : solve(rules);
     renderAll();
   });

@@ -149,10 +149,12 @@ export class Plot {
     this.plotG.append(s("line", { x1: xx, x2: xx, y1: 0, y2: this.ih, stroke: color, "stroke-dasharray": dash }));
   }
 
-  line(pts, { color, width = 2, dash, opacity = 1 } = {}) {
+  line(pts, { color, width = 2, dash, opacity = 1, draw = 0 } = {}) {
     if (pts.length < 2) return;
     const d = pts.map((p, i) => `${i ? "L" : "M"}${this.sx(p.x).toFixed(1)},${this.sy(p.y).toFixed(1)}`).join("");
-    this.plotG.append(s("path", { d, fill: "none", stroke: color, "stroke-width": width, "stroke-dasharray": dash, "stroke-linejoin": "round", opacity }));
+    const path = s("path", { d, fill: "none", stroke: color, "stroke-width": width, "stroke-dasharray": dash, "stroke-linejoin": "round", opacity });
+    this.plotG.append(path);
+    if (draw) drawIn(path, draw);
   }
 
   band(pts, { color, opacity = 0.16 } = {}) {
@@ -240,6 +242,16 @@ export class Plot {
 }
 
 /** Small inline sparkline (no axes). */
+/** Draw a solid path from left to right over `ms` (skipped under reduced motion). */
+export function drawIn(path, ms = 1200) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || !path.getTotalLength) return;
+  const len = path.getTotalLength();
+  path.style.strokeDasharray = `${len}`;
+  path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: ms, easing: "ease-out" }).onfinish = () => {
+    path.style.strokeDasharray = "";
+  };
+}
+
 export function sparkline(el, values, { color = "var(--felt)" } = {}) {
   el.innerHTML = "";
   if (values.length < 2) return;

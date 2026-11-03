@@ -39,6 +39,26 @@ function initTheme() {
   });
 }
 
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Count the first number in `el`'s text up from zero, keeping its format. */
+function countUp(el, ms = 900) {
+  const text = el.textContent;
+  const m = text.match(/-?\d+(?:\.\d+)?/);
+  if (!m || reducedMotion()) return;
+  const target = parseFloat(m[0]);
+  const decimals = (m[0].split(".")[1] || "").length;
+  const t0 = performance.now();
+  const frame = (t) => {
+    const k = Math.min(1, (t - t0) / ms);
+    const eased = 1 - Math.pow(1 - k, 3);
+    el.textContent = text.replace(m[0], (target * eased).toFixed(decimals));
+    if (k < 1) requestAnimationFrame(frame);
+    else el.textContent = text;
+  };
+  requestAnimationFrame(frame);
+}
+
 function heroStats(app) {
   const c = app.counting;
   const matches = app.strategy.states.filter((st) => {
@@ -56,6 +76,7 @@ function heroStats(app) {
   $("#hero-stats").replaceChildren(
     ...tiles.map(([l, v, sub]) => h("div", { class: "stat" }, h("div", { class: "label" }, l), h("div", { class: "value" }, v), h("div", { class: "sub" }, sub))),
   );
+  for (const el of $$("#hero-stats .value")) countUp(el);
 }
 
 async function show(tab) {

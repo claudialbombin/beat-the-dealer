@@ -15,6 +15,10 @@ let busy = false;
 let opts = { coach: true, hint: false, count: false, quiz: false };
 let S; // session stats
 let roundDecisions = [];
+// What is already on the table, so render() only animates what is new.
+let shown = { dealer: 0, hands: [], holeHidden: true, results: false };
+let last = { net: 0, running: 0 };
+const STAGGER = 110; // ms between cards dealt in the same render
 
 function resetSession() {
   S = { hands: 0, net: 0, decisions: 0, correct: 0, cost: 0, history: [0] };
@@ -41,7 +45,19 @@ function totalLabel(hand, full = true) {
 function render() {
   // dealer
   const dealerEl = $("#dealer-cards");
-  dealerEl.replaceChildren(...game.dealer.map((c, i) => cardEl(c, i === 1 && !game.holeRevealed)));
+  let fresh = 0;
+  dealerEl.replaceChildren(
+    ...game.dealer.map((c, i) => {
+      const hidden = i === 1 && !game.holeRevealed;
+      const el = cardEl(c, hidden);
+      if (i === 1 && !hidden && shown.holeHidden && shown.dealer >= 2) el.classList.add("flip");
+      else if (i < shown.dealer) el.classList.add("settled");
+      else el.style.animationDelay = `${STAGGER * fresh++}ms`;
+      return el;
+    }),
+  );
+  shown.dealer = game.dealer.length;
+  if (game.dealer.length >= 2) shown.holeHidden = !game.holeRevealed;
   const dt = $("#dealer-total");
   if (!game.dealer.length) dt.textContent = "";
   else if (!game.holeRevealed) dt.textContent = upcardLabel(game.upcard);
@@ -58,16 +74,25 @@ function render() {
       const res =
         hand.result == null
           ? null
-          : h("span", { class: `result ${hand.result > 0 ? "win" : hand.result < 0 ? "lose" : "push"}` }, hand.result === 0 ? "Push" : signed(hand.result, hand.result % 1 ? 1 : 0));
+          : h("span", { class: `result ${hand.result > 0 ? "win" : hand.result < 0 ? "lose" : "push"}${shown.results ? "" : " pop"}` }, hand.result === 0 ? "Push" : signed(hand.result, hand.result % 1 ? 1 : 0));
+      const seen = shown.hands[i] || 0;
+      const cards = hand.cards.map((c, j) => {
+        const el = cardEl(c);
+        if (j < seen) el.classList.add("settled");
+        else el.style.animationDelay = `${STAGGER * fresh++}ms`;
+        return el;
+      });
+      shown.hands[i] = hand.cards.length;
       return h(
         "div",
         { class: `hand${active ? " active" : ""}` },
-        h("div", { class: "cards" }, hand.cards.map((c) => cardEl(c))),
+        h("div", { class: "cards" }, cards),
         h("div", { class: "seat-label" }, "You ", h("span", { class: "total" }, totalLabel(hand))),
         h("div", {}, h("span", { class: "bet-chip" }, `${hand.bet}u${hand.doubled ? " ×2" : ""}`), " ", res),
       );
     }),
   );
+  if (game.hands.some((x) => x.result != null)) shown.results = true;
 
   // actions
   const legal = game.legal();
@@ -91,6 +116,8 @@ function render() {
   $("#tc").textContent = tc.toFixed(1);
   $("#decks-left").textContent = sh.decksRemaining.toFixed(1);
   $("#rc").className = `v ${game.running > 0 ? "pos" : game.running < 0 ? "neg" : ""}`;
+  if (opts.count && game.running !== last.running) bump($("#rc"));
+  last.running = game.running;
   const idle = game.phase === "idle" || game.phase === "done";
   $("#bet-hint").textContent =
     opts.count && idle
@@ -101,15 +128,27 @@ function render() {
   $("#s-hands").textContent = S.hands;
   $("#s-net").textContent = signed(S.net, S.net % 1 ? 1 : 0);
   $("#s-net").className = `v ${S.net > 0 ? "pos" : S.net < 0 ? "neg" : ""}`;
+  if (S.net !== last.net) bump($("#s-net"));
+  last.net = S.net;
   $("#s-acc").textContent = S.decisions ? `${Math.round((100 * S.correct) / S.decisions)}%` : "–";
   $("#s-cost").textContent = `${S.cost.toFixed(2)}u`;
   sparkline($("#s-spark"), S.history);
 }
 
-function message(text, ms = 1400) {
+/** Restart a one-shot CSS animation on an element. */
+function bump(el, cls = "bump") {
+  el.classList.remove(cls);
+  void el.offsetWidth; // force a reflow so the animation runs again
+  el.classList.add(cls);
+}
+
+function message(text, ms = 1400, kind = "") {
   const m = $("#round-msg");
   m.textContent = text;
+  m.classList.remove("show", "win", "lose", "push");
+  void m.offsetWidth;
   m.classList.add("show");
+  if (kind) m.classList.add(kind);
   clearTimeout(message.t);
   message.t = setTimeout(() => m.classList.remove("show"), ms);
 }
@@ -145,12 +184,14 @@ function coach(ctx, chosen, evs, rec, handBet) {
     evBars(evs, { best, chosen }),
     h("p", { class: "fine", style: "margin:8px 0 0" }, "Expected profit per unit bet for each action (exact, infinite-deck)."),
   );
+  bump(body, "enter");
 }
 
 // ---------------------------------------------------------------- flow
 async function deal() {
   if (busy || game.phase === "player" || game.phase === "dealer") return;
   roundDecisions = [];
+  shown = { dealer: 0, hands: [], holeHidden: true, results: false };
   game.deal(bet);
   if (game.shuffledThisRound) message("Cut card reached: new shoe");
   render();
@@ -169,6 +210,9 @@ async function act(a) {
   S.cost += loss * handBet;
   roundDecisions.push(loss < 1e-9);
   coach(ctx, a, evs, rec, handBet);
+  // After a split both hands keep one card already on the table; the second
+  // hand's card moves rather than being dealt, so only the new cards animate.
+  if (a === "P") shown.hands = [1, 0];
   game.act(a);
   render();
   if (game.phase === "dealer") await runDealer();
@@ -197,7 +241,7 @@ async function finishRound() {
   };
   let msg = reasons[game.endReason] || (game.net > 0 ? `You win ${signed(game.net, game.net % 1 ? 1 : 0)}` : game.net < 0 ? `You lose ${Math.abs(game.net)}` : "Push");
   if (!game.endReason && game.dealerTotal > 21 && game.hands.some((x) => !x.bust)) msg = `Dealer busts: ${signed(game.net, 0)}`;
-  message(msg, 1800);
+  message(msg, 1800, game.net > 0 ? "win" : game.net < 0 ? "lose" : "push");
   if (opts.coach && game.net < 0 && roundDecisions.length && roundDecisions.every(Boolean)) {
     $("#coach-body").append(h("p", { class: "fine", style: "margin-top:8px" }, "Every decision this round was right; the loss is variance."));
   }
